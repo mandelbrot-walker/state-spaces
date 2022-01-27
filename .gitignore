@@ -100,6 +100,9 @@ celerybeat-schedule
 .spyderproject
 .spyproject
 
+# VSCode project files
+.vscode
+
 # Rope project settings
 .ropeproject
 
@@ -118,5 +121,8 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# VENV
+venv/
 
 # End of https://www.gitignore.io/api/python
