@@ -53,8 +53,8 @@ parser.add_argument('--grayscale', action='store_true', help='Use grayscale CIFA
 parser.add_argument('--num_workers', default=4, type=int, help='Number of workers to use for dataloader')
 parser.add_argument('--batch_size', default=64, type=int, help='Batch size')
 # Model
-parser.add_argument('--n_layers', default=4, type=int, help='Number of layers')
-parser.add_argument('--d_model', default=512, type=int, help='Model dimension')
+parser.add_argument('--n_layers', default=1, type=int, help='Number of layers')
+parser.add_argument('--d_model', default=4, type=int, help='Model dimension')
 parser.add_argument('--dropout', default=0.2, type=float, help='Dropout')
 parser.add_argument('--prenorm', action='store_true', help='Prenorm')
 # General
@@ -80,24 +80,25 @@ def split_train_val(train, val_split):
 
 class LorenzDataset(torch.utils.data.Dataset):
 
-    def __init__(self, rho_min=1, rho_max=100, number_of_samples=1000, beta=8/3, sigma=10):
+    def __init__(self, rho_min=1, rho_max=100, number_of_samples=1024, beta=8/3, sigma=10):
         self.lorenz = Lorenz()
         self.lorenz.beta = beta
         self.lorenz.sigma = sigma
+        self.rho_max = rho_max
         self.rhos = np.random.uniform(low=rho_min, high=rho_max, size=number_of_samples).astype(np.float32)
 
     def __getitem__(self, idx):
         self.lorenz.rho = self.rhos[idx]
-        trajectory = torch.tensor(self.lorenz.make_trajectory(10, resample=True), dtype=torch.float32)
-        return trajectory, self.lorenz.rho
+        trajectory = torch.tensor(self.lorenz.make_trajectory(1000, resample=True, standardize=True), dtype=torch.float32) / 100.0
+        return trajectory, torch.tensor(self.lorenz.rho / self.rho_max, dtype=torch.float32)
 
     def __len__(self):
         return len(self.rhos)
 
 if args.dataset == 'lorenz':
-    trainset = LorenzDataset(rho_min=1, rho_max=100)
-    valset = LorenzDataset(rho_min=1, rho_max=100, number_of_samples=100)
-    testset = LorenzDataset(rho_min=1, rho_max=100, number_of_samples=100)
+    trainset = LorenzDataset(rho_min=1, rho_max=100, number_of_samples=4096 * 4)
+    valset = LorenzDataset(rho_min=1, rho_max=100, number_of_samples=128)
+    testset = LorenzDataset(rho_min=1, rho_max=100, number_of_samples=128)
     d_input = 3
     d_output = 1
 
@@ -325,8 +326,6 @@ optimizer, scheduler = setup_optimizer(
 def train():
     model.train()
     train_loss = 0
-    correct = 0
-    total = 0
     pbar = tqdm(enumerate(trainloader))
     for batch_idx, (inputs, targets) in pbar:
         inputs, targets = inputs.to(device), targets.to(device)
