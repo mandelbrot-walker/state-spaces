@@ -63,7 +63,7 @@ parser.add_argument('--resume', '-r', action='store_true', help='Resume from che
 args = parser.parse_args()
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
-best_acc = 0  # best test accuracy
+best_loss = 1e9  # best test accuracy
 start_epoch = 0  # start from epoch 0 or last checkpoint epoch
 
 # Data
@@ -337,9 +337,6 @@ def train():
         optimizer.step()
 
         train_loss += loss.item()
-        # _, predicted = outputs.max(1)
-        # total += targets.size(0)
-        # correct += predicted.eq(targets).sum().item()
 
         pbar.set_description(
             'Batch Idx: (%d/%d) | Loss: %.3f' % 
@@ -348,11 +345,9 @@ def train():
 
 
 def eval(epoch, dataloader, checkpoint=False):
-    global best_acc
+    global best_loss
     model.eval()
     eval_loss = 0
-    correct = 0
-    total = 0
     with torch.no_grad():
         pbar = tqdm(enumerate(dataloader))
         for batch_idx, (inputs, targets) in pbar:
@@ -361,39 +356,35 @@ def eval(epoch, dataloader, checkpoint=False):
             loss = criterion(outputs, targets)
 
             eval_loss += loss.item()
-            _, predicted = outputs.max(1)
-            total += targets.size(0)
-            correct += predicted.eq(targets).sum().item()
 
             pbar.set_description(
-                'Batch Idx: (%d/%d) | Loss: %.3f | Acc: %.3f%% (%d/%d)' % 
-                (batch_idx, len(dataloader), eval_loss/(batch_idx+1), 100.*correct/total, correct, total)
+                'Batch Idx: (%d/%d) | Loss: %.3f' % 
+                (batch_idx, len(dataloader), eval_loss/(batch_idx+1))
             )
 
     # Save checkpoint.
     if checkpoint:
-        acc = 100.*correct/total
-        if acc > best_acc:
+        if eval_loss < best_loss:
             state = {
                 'model': model.state_dict(),
-                'acc': acc,
+                'loss': eval_loss,
                 'epoch': epoch,
             }
             if not os.path.isdir('checkpoint'):
                 os.mkdir('checkpoint')
             torch.save(state, './checkpoint/ckpt.pth')
-            best_acc = acc
+            best_loss = eval_loss
 
-        return acc
+        return eval_loss
 
 pbar = tqdm(range(start_epoch, start_epoch+200))
 for epoch in pbar:
     if epoch == 0:
         pbar.set_description('Epoch: %d' % (epoch))
     else:
-        pbar.set_description('Epoch: %d | Val acc: %1.3f' % (epoch, val_acc))
+        pbar.set_description('Epoch: %d | Val loss: %1.3f' % (epoch, val_loss))
     train()
-    val_acc = eval(epoch, valloader, checkpoint=True)
+    val_loss = eval(epoch, valloader, checkpoint=True)
     eval(epoch, testloader)
-    scheduler.step(val_acc)
+    scheduler.step(val_loss)
     
