@@ -1,0 +1,1 @@
+python chaos.py --lr 0.0001
