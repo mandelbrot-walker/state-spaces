@@ -306,7 +306,11 @@ def setup_optimizer(model, lr, weight_decay, patience):
 
     return optimizer, scheduler
 
-criterion = nn.CrossEntropyLoss()
+if args.dataset == 'lorenz':
+    criterion = nn.MSELoss()
+else:
+    criterion = nn.CrossEntropyLoss()
+    
 optimizer, scheduler = setup_optimizer(
     model, lr=args.lr, weight_decay=args.weight_decay, patience=args.patience
 )
