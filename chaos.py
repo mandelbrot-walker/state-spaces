@@ -84,20 +84,22 @@ class LorenzDataset(torch.utils.data.Dataset):
         self.lorenz = Lorenz()
         self.lorenz.beta = beta
         self.lorenz.sigma = sigma
-        self.rhos = np.random.uniform(low=rho_min, high=rho_max, size=number_of_samples)
+        self.rhos = np.random.uniform(low=rho_min, high=rho_max, size=number_of_samples).astype(np.float32)
 
     def __getitem__(self, idx):
         self.lorenz.rho = self.rhos[idx]
-        trajectory = self.lorenz.make_trajectory(1000, resample=True)
+        trajectory = torch.tensor(self.lorenz.make_trajectory(10, resample=True), dtype=torch.float32)
         return trajectory, self.lorenz.rho
+
+    def __len__(self):
+        return len(self.rhos)
 
 if args.dataset == 'lorenz':
     trainset = LorenzDataset(rho_min=1, rho_max=100)
     valset = LorenzDataset(rho_min=1, rho_max=100, number_of_samples=100)
     testset = LorenzDataset(rho_min=1, rho_max=100, number_of_samples=100)
-    d_input = 1
+    d_input = 3
     d_output = 1
-
 
 elif args.dataset == 'cifar10':
  
@@ -335,13 +337,13 @@ def train():
         optimizer.step()
 
         train_loss += loss.item()
-        _, predicted = outputs.max(1)
-        total += targets.size(0)
-        correct += predicted.eq(targets).sum().item()
+        # _, predicted = outputs.max(1)
+        # total += targets.size(0)
+        # correct += predicted.eq(targets).sum().item()
 
         pbar.set_description(
-            'Batch Idx: (%d/%d) | Loss: %.3f | Acc: %.3f%% (%d/%d)' % 
-            (batch_idx, len(trainloader), train_loss/(batch_idx+1), 100.*correct/total, correct, total)
+            'Batch Idx: (%d/%d) | Loss: %.3f' % 
+            (batch_idx, len(trainloader), train_loss/(batch_idx+1))
         )
 
 
