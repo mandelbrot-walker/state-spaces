@@ -19,3 +19,6 @@ torchtext
 datasets
 transformers
 pytorch-fast-transformers
+dysts
+sdeint
+numba
