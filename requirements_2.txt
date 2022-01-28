@@ -16,7 +16,6 @@ opt_einsum
 pykeops
 cmake
 torchtext
-torchvision
 datasets
 transformers
 dysts
