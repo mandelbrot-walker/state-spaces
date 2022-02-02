@@ -90,7 +90,7 @@ class LorenzDataset(torch.utils.data.Dataset):
     def __getitem__(self, idx):
         self.lorenz.rho = self.rhos[idx]
         trajectory = torch.tensor(self.lorenz.make_trajectory(1000, resample=True, standardize=True), dtype=torch.float32) / 100.0
-        return trajectory, torch.tensor(self.lorenz.rho / self.rho_max, dtype=torch.float32)
+        return trajectory, self.lorenz.rho / self.rho_max
 
     def __len__(self):
         return len(self.rhos)
